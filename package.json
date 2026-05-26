@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/download-dictionary.mjs && npx prisma generate && next build",
-    "start": "next start",
+    "start": "npx prisma db push && next start",
     "lint": "eslint",
     "setup": "node scripts/download-dictionary.mjs",
     "db:push": "npx prisma db push",
