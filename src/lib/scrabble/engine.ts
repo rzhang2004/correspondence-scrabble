@@ -160,12 +160,18 @@ export function validateAndScoreMove(
   const mainWord = getWordAt(newBoard, firstTile.row, firstTile.col, horizontal)
   if (mainWord.word.length >= 2) wordsFormed.push(mainWord)
 
-  // Cross words for each placed tile
+  // Cross words for each placed tile (perpendicular to the main word direction).
+  // Dedup across cross words only — never against the main word, since the main
+  // word runs in the opposite direction and can coincidentally share a start cell.
+  const seenCrossStarts = new Set<string>()
   for (const tile of placedTiles) {
     const cross = getWordAt(newBoard, tile.row, tile.col, !horizontal)
     if (cross.word.length >= 2) {
-      const alreadyAdded = wordsFormed.some((w) => w.cells[0].row === cross.cells[0].row && w.cells[0].col === cross.cells[0].col)
-      if (!alreadyAdded) wordsFormed.push(cross)
+      const key = `${cross.cells[0].row},${cross.cells[0].col}`
+      if (!seenCrossStarts.has(key)) {
+        seenCrossStarts.add(key)
+        wordsFormed.push(cross)
+      }
     }
   }
 

@@ -55,6 +55,7 @@ export default function ScrabbleBoard({ board, pendingTiles, selectedTile, onCel
         className="grid gap-[1px] bg-stone-400 border border-stone-400 rounded mx-auto"
         style={{
           gridTemplateColumns: "repeat(15, minmax(0, 1fr))",
+          gridTemplateRows: "repeat(15, minmax(0, 1fr))",
           width: "min(100%, 480px)",
           aspectRatio: "1/1",
         }}
