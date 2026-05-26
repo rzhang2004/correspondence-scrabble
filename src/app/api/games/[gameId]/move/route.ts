@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ gam
     ])
 
     if (!gameOver) {
-      sendTurnNotification({ toEmail: opponent.email!, toName: opponent.username, opponentName: session.user.username ?? "Opponent", gameId }).catch(() => {})
+      sendTurnNotification({ toEmail: opponent.email!, toName: opponent.username, opponentName: session.user.username ?? "Opponent", gameId }).catch((err) => { console.error("sendTurnNotification failed:", err) })
     }
 
     return NextResponse.json({ ok: true, move })
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ gam
       }),
     ])
 
-    sendTurnNotification({ toEmail: opponent.email!, toName: opponent.username, opponentName: session.user.username ?? "Opponent", gameId }).catch(() => {})
+    sendTurnNotification({ toEmail: opponent.email!, toName: opponent.username, opponentName: session.user.username ?? "Opponent", gameId }).catch((err) => { console.error("sendTurnNotification failed:", err) })
     return NextResponse.json({ ok: true, newRack: finalRack })
   }
 
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ gam
     ])
 
     if (gameStatus === "ACTIVE") {
-      sendTurnNotification({ toEmail: opponent.email!, toName: opponent.username, opponentName: session.user.username ?? "Opponent", gameId }).catch(() => {})
+      sendTurnNotification({ toEmail: opponent.email!, toName: opponent.username, opponentName: session.user.username ?? "Opponent", gameId }).catch((err) => { console.error("sendTurnNotification failed:", err) })
     }
 
     return NextResponse.json({

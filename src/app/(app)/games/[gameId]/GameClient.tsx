@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import ScrabbleBoard, { PendingTile } from "@/components/ScrabbleBoard"
 import TileRack from "@/components/TileRack"
@@ -47,6 +47,32 @@ export default function GameClient(props: Props) {
   const [lastResult, setLastResult] = useState<{words:string[];score:number} | null>(null)
 
   const isMyTurn = props.currentTurn === props.userId
+
+  // Poll for opponent's moves while waiting. Skips when it's our turn, when the
+  // game is over, or when the tab is hidden. Refreshes the server component if
+  // the move count or whose-turn changed.
+  useEffect(() => {
+    if (isMyTurn || props.status !== "ACTIVE") return
+    let cancelled = false
+    const knownMoveCount = props.moves.length
+    const knownTurn = props.currentTurn
+
+    async function check() {
+      if (document.hidden) return
+      try {
+        const res = await fetch(`/api/games/${props.gameId}`, { cache: "no-store" })
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled) return
+        if (data.moves.length !== knownMoveCount || data.currentTurn !== knownTurn) {
+          router.refresh()
+        }
+      } catch { /* network blip — try again next tick */ }
+    }
+
+    const interval = setInterval(check, 3000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [isMyTurn, props.status, props.gameId, props.moves.length, props.currentTurn, router])
   const isPlayer1 = props.player1.id === props.userId
   const me = isPlayer1 ? props.player1 : props.player2
   const opponent = isPlayer1 ? props.player2 : props.player1
@@ -125,6 +151,9 @@ export default function GameClient(props: Props) {
       recallAll()
     } else {
       setLastResult({ words: data.words, score: data.score })
+      setPendingTiles([])
+      setRack(data.newRack)
+      setSelectedRackIndex(null)
       setTimeout(() => router.refresh(), 1500)
     }
     setSubmitting(false)

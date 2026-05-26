@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       toName: opponent.username,
       fromName: me.username,
       inviteId: game.id,
-    }).catch(() => {})
+    }).catch((err) => { console.error("sendGameInvite failed:", err) })
   }
 
   return NextResponse.json(game, { status: 201 })

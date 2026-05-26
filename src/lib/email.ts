@@ -21,7 +21,10 @@ export async function sendTurnNotification({
   opponentName: string
   gameId: string
 }) {
-  if (!process.env.RESEND_API_KEY) return
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY not set — skipping email")
+    return
+  }
 
   await getResend().emails.send({
     from: from(),
@@ -55,7 +58,10 @@ export async function sendGameInvite({
   fromName: string
   inviteId: string
 }) {
-  if (!process.env.RESEND_API_KEY) return
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY not set — skipping email")
+    return
+  }
 
   await getResend().emails.send({
     from: from(),
