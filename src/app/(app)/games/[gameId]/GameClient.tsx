@@ -45,6 +45,8 @@ export default function GameClient(props: Props) {
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [lastResult, setLastResult] = useState<{words:string[];score:number} | null>(null)
+  const [preview, setPreview] = useState<{ valid: true; words: string[]; score: number } | { valid: false; error: string } | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   const isMyTurn = props.currentTurn === props.userId
 
@@ -73,6 +75,35 @@ export default function GameClient(props: Props) {
     const interval = setInterval(check, 3000)
     return () => { cancelled = true; clearInterval(interval) }
   }, [isMyTurn, props.status, props.gameId, props.moves.length, props.currentTurn, router])
+
+  // Live preview of pending move (score + validity). Debounced so we don't hit
+  // the server on every tile placement.
+  useEffect(() => {
+    if (pendingTiles.length === 0) {
+      setPreview(null)
+      setPreviewLoading(false)
+      return
+    }
+    setPreviewLoading(true)
+    let cancelled = false
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/games/${props.gameId}/preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tiles: pendingTiles }),
+        })
+        const data = await res.json()
+        if (cancelled) return
+        setPreview(data)
+      } catch {
+        if (!cancelled) setPreview({ valid: false, error: "Preview unavailable" })
+      } finally {
+        if (!cancelled) setPreviewLoading(false)
+      }
+    }, 250)
+    return () => { cancelled = true; clearTimeout(handle) }
+  }, [pendingTiles, props.gameId])
   const isPlayer1 = props.player1.id === props.userId
   const me = isPlayer1 ? props.player1 : props.player2
   const opponent = isPlayer1 ? props.player2 : props.player1
@@ -235,6 +266,24 @@ export default function GameClient(props: Props) {
         </div>
       )}
 
+      {/* Live preview of pending move */}
+      {pendingTiles.length > 0 && !lastResult && (
+        preview === null || previewLoading ? (
+          <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 text-center text-stone-500 text-sm">
+            Checking move…
+          </div>
+        ) : preview.valid ? (
+          <div className="bg-green-50 border border-green-300 rounded-xl px-4 py-2 text-center text-sm">
+            <span className="text-green-800 font-semibold">{preview.words.join(", ")}</span>
+            <span className="text-green-700"> — {preview.score} pts</span>
+          </div>
+        ) : (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2 text-center text-red-700 text-sm">
+            {preview.error}
+          </div>
+        )
+      )}
+
       {/* Last result toast */}
       {lastResult && (
         <div className="bg-green-100 border border-green-300 rounded-xl px-4 py-3 text-center">
@@ -296,10 +345,10 @@ export default function GameClient(props: Props) {
                 <>
                   <button
                     onClick={submitMove}
-                    disabled={submitting}
-                    className="bg-green-700 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-600 disabled:opacity-60 transition-colors"
+                    disabled={submitting || previewLoading || (preview !== null && !preview.valid)}
+                    className="bg-green-700 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                   >
-                    {submitting ? "Playing…" : "Play word"}
+                    {submitting ? "Playing…" : preview && preview.valid ? `Play for ${preview.score}` : "Play word"}
                   </button>
                   <button
                     onClick={recallAll}
