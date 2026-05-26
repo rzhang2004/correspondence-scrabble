@@ -8,7 +8,15 @@ export async function proxy(req: NextRequest) {
   const publicPaths = ["/login", "/register", "/api/auth", "/api/health", "/"]
   const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET })
+  // NextAuth v5 (Auth.js) renamed the session cookie from
+  // "next-auth.session-token" to "authjs.session-token".
+  // On HTTPS (production) the cookie gets a __Secure- prefix.
+  const isHttps = req.url.startsWith("https")
+  const cookieName = isHttps
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token"
+
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET, cookieName })
   const isLoggedIn = !!token
 
   if (!isLoggedIn && !isPublic) {
