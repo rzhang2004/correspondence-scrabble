@@ -52,7 +52,7 @@ export default function ScrabbleBoard({ board, pendingTiles, selectedTile, onCel
   return (
     <div className="w-full overflow-x-auto">
       <div
-        className="grid gap-[1px] bg-stone-400 border border-stone-400 rounded mx-auto"
+        className="grid border-t border-l border-stone-400 rounded overflow-hidden mx-auto"
         style={{
           gridTemplateColumns: "repeat(15, minmax(0, 1fr))",
           gridTemplateRows: "repeat(15, minmax(0, 1fr))",
@@ -67,7 +67,7 @@ export default function ScrabbleBoard({ board, pendingTiles, selectedTile, onCel
             const bonus = getCellBonus(r, c)
             const hasTile = cell.letter !== null || pending
 
-            let cellClass = "flex items-center justify-center cursor-default select-none relative "
+            let cellClass = "flex items-center justify-center cursor-default select-none relative border-r border-b border-stone-400 "
             if (!hasTile) {
               cellClass += bonus ? BONUS_STYLES[bonus] : "bg-green-100"
               if (isMyTurn && selectedTile !== null && !cell.letter) {

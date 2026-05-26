@@ -33,7 +33,7 @@ interface Props {
 
 export default function GameClient(props: Props) {
   const router = useRouter()
-  const [board] = useState(props.initialBoard)
+  const board = props.initialBoard
   const [rack, setRack] = useState(props.initialRack)
   const [pendingTiles, setPendingTiles] = useState<PendingTile[]>([])
   const [selectedRackIndex, setSelectedRackIndex] = useState<number | null>(null)
@@ -49,6 +49,14 @@ export default function GameClient(props: Props) {
   const [previewLoading, setPreviewLoading] = useState(false)
 
   const isMyTurn = props.currentTurn === props.userId
+
+  // Once the server board reflects the tiles we just placed, drop them from
+  // the pending overlay — otherwise they'd render twice (real + pending).
+  useEffect(() => {
+    if (pendingTiles.length === 0) return
+    const allLanded = pendingTiles.every((t) => props.initialBoard[t.row][t.col].letter !== null)
+    if (allLanded) setPendingTiles([])
+  }, [props.initialBoard, pendingTiles])
 
   // Poll for opponent's moves while waiting. Skips when it's our turn, when the
   // game is over, or when the tab is hidden. Refreshes the server component if
@@ -182,10 +190,12 @@ export default function GameClient(props: Props) {
       recallAll()
     } else {
       setLastResult({ words: data.words, score: data.score })
-      setPendingTiles([])
       setRack(data.newRack)
       setSelectedRackIndex(null)
-      setTimeout(() => router.refresh(), 1500)
+      // Keep pendingTiles displayed (as the "just placed" overlay) until
+      // router.refresh brings the new board state through props — the effect
+      // below clears them then, avoiding a flash of empty cells.
+      router.refresh()
     }
     setSubmitting(false)
   }
